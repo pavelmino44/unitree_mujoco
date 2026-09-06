@@ -5,7 +5,7 @@ import noise
 
 ROBOT = "go2"
 INPUT_SCENE_PATH = "./scene.xml"
-OUTPUT_SCENE_PATH = "../unitree_robots/" + ROBOT + "/scene_terrain.xml"
+OUTPUT_SCENE_PATH = "../unitree_robots/" + ROBOT + "/my_scene_terrain.xml"
 
 
 # zyx euler angle to quaternion
@@ -113,7 +113,7 @@ class TerrainGenerator:
     def AddStairs(self,
                   init_pos=[1.0, 0.0, 0.0],
                   yaw=0.0,
-                  width=0.2,
+                  width=0.3,
                   height=0.15,
                   length=1.5,
                   stair_nums=10):
@@ -143,6 +143,81 @@ class TerrainGenerator:
             self.AddBox([x + init_pos[0], y + init_pos[1], local_pos[2]],
                         [0.0, 0.0, yaw],
                         [width, length, abs(height - gap)])
+
+    def AddMireaStairs(self,
+                        init_pos=[1.0, 0.0, 0.0],
+                        yaw=0.0):
+
+        # Ступени снизу вверх:
+        # (height, width, length)
+        stairs = [
+            (0.15, 0.31, 2.0),  # 1
+            (0.15, 0.31, 2.0),  # 2
+            (0.15, 0.31, 2.0),  # 3
+            (0.15, 0.31, 2.0),  # 4
+            (0.15, 2.00, 2.0),  # 5 — платформа
+        ]
+
+        local_x = 0.0
+        current_height = 0.0
+
+        for height, width, length in stairs:
+
+            # Центр текущего блока
+            local_x += width
+            current_height += height
+
+            x, y = rot2d(local_x, 0.0, yaw)
+
+            if width < 2.0:
+                self.AddBox(
+                    [x + init_pos[0],
+                    y + init_pos[1],
+                    current_height - 0.5 * height],
+                    [0.0, 0.0, yaw],
+                    [width, length, height]
+                )
+            else:
+                self.AddBox(
+                    [x + init_pos[0],
+                    y + init_pos[1],
+                    current_height - 0.5 * height],
+                    [0.0, 0.0, yaw],
+                    [width * 2 - 0.31, length, height]
+                )
+
+    def AddPyramidStairs(
+        self,
+        init_pos=[1.0, 0.0, 0.0],
+        yaw=0.0,
+        step_width=0.3,
+        step_length=1.5,
+        min_height=0.05,
+        max_height=0.23,
+        stair_nums=10,
+    ):
+        z = init_pos[2]
+
+        for i in range(stair_nums):
+            # linear or random height like Isaac
+            height = np.linspace(min_height, max_height, stair_nums)[i]
+
+            # move forward
+            x_local = i * step_width
+            z += height
+
+            # rotate
+            x, y = rot2d(x_local, 0.0, yaw)
+
+            self.AddBox(
+                position=[
+                    x + init_pos[0],
+                    y + init_pos[1],
+                    z - height / 2.0,
+                ],
+                euler=[0.0, 0.0, yaw],
+                size=[step_width, step_length, height],
+        )
 
     def AddRoughGround(self,
                        init_pos=[1.0, 0.0, 0.0],
@@ -268,8 +343,8 @@ if __name__ == "__main__":
     tg.AddGeometry(position=[1.5, 0.0, 0.25], euler=[0, 0, 0.0], size=[1.0,0.5,0.5],geo_type="cylinder")
 
     # Slope
-    tg.AddBox(position=[2.0, 2.0, 0.5],
-              euler=[0.0, -0.5, 0.0],
+    tg.AddBox(position=[2.0, 2.0, 0.2],
+              euler=[0.0, -0.2, 0.0],
               size=[3, 1.5, 0.1])
 
     # Stairs
@@ -277,6 +352,20 @@ if __name__ == "__main__":
 
     # Suspend stairs
     tg.AddSuspendStairs(init_pos=[1.0, 6.0, 0.0], yaw=0.0)
+
+    # Mirea Stairs (near Г-100 door)
+    tg.AddMireaStairs(init_pos=[1.0, 8.0, 0.0], yaw=0.0)
+
+    # новая пирамидальная лестница
+    tg.AddPyramidStairs(
+        init_pos=[1.0, 10.0, 0.0],
+        yaw=0.0,
+        step_width=0.25,
+        step_length=1.2,
+        min_height=0.05,
+        max_height=0.2,
+        stair_nums=12,
+    )
 
     # Rough ground
     tg.AddRoughGround(init_pos=[-2.5, 5.0, 0.0],
