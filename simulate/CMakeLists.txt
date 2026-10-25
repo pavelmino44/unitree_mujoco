@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(unitree_mujoco)
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags,-rpath,/opt/unitree_robotics/lib")
 
 if (CMAKE_BUILD_TYPE MATCHES "Debug")
   message("Debug mode")
