@@ -4,3 +4,8 @@
 **/log/
 **/install/
 simulate/mujoco
+
+# сгенерированный каталог сценариев (unitree_rl_lab/scripts/rsl_rl/export_mujoco_scenarios.py)
+eval_scenarios/
+# временные сцены eval_scene.py, если процесс упал до их удаления
+unitree_robots/*/.eval_scene_*.xml
