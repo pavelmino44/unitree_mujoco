@@ -118,8 +118,17 @@ class EvalSim:
         self.parts = self._classify_geoms()
         self.n_sub = max(1, int(round(args.sample_dt / args.dt)))
 
-        # episode state
-        self.hold_pose = self.data.qpos[self.free_qpos:self.free_qpos + 7].copy()
+        # episode state. Until the first "reset" the robot waits OFF the tile, above the flat border: the default
+        # pose of the model (base at x = y = 0) would put it inside the obstacle (e.g. the top of a high pyramid),
+        # and hundreds of deep contacts with a height field make the physics slower than real time.
+        q = self.free_qpos
+        sx = float(terrain["tile_size"][0])
+        if terrain["border_width"] >= 2.0:
+            self.data.qpos[q:q + 3] = [-(sx / 2.0 + 1.5), 0.0, 0.6]
+        else:
+            self.data.qpos[q:q + 3] = [0.0, 0.0, float(self.terrain_info.get("top_max", 0.0)) + 1.0]
+        mujoco.mj_forward(self.model, self.data)
+        self.hold_pose = self.data.qpos[q:q + 7].copy()
         self.holding = True
         self.released_at = None
         self.steps = 0
@@ -330,17 +339,27 @@ class EvalSim:
     def physics_loop(self, viewer=None):
         dt = self.model.opt.timestep
         next_t = time.perf_counter()
+        last_warn = 0.0
         while self.running and (viewer is None or viewer.is_running()):
             self.step()
             next_t += dt
             delay = next_t - time.perf_counter()
             if delay > 0:
                 time.sleep(delay)
-            elif delay < -0.1:  # far behind real time: count it and restart the schedule
-                with self.lock:
-                    self.lag["overruns"] += 1
-                    self.lag["worst_s"] = max(self.lag["worst_s"], -delay)
-                next_t = time.perf_counter()
+            else:
+                # behind real time: still give the other threads (control connection, DDS bridge) the GIL and the
+                # lock, otherwise this loop takes them back at once and commands are never answered
+                time.sleep(0)
+                if delay < -0.1:  # far behind: count it, report it and restart the schedule
+                    with self.lock:
+                        self.lag["overruns"] += 1
+                        self.lag["worst_s"] = max(self.lag["worst_s"], -delay)
+                    now = time.perf_counter()
+                    if now - last_warn > 2.0:
+                        print(f"[eval_sim] WARNING: physics {-delay:.2f} s behind real time (t_sim={self.data.time:.2f} s, "
+                              f"{self.data.ncon} contacts)", flush=True)  # fmt: skip
+                        last_warn = now
+                    next_t = time.perf_counter()
         self.running = False
 
 
