@@ -1,3 +1,13 @@
+# Copyright (c) 2016-2024 HangZhou YuShu TECHNOLOGY CO.,LTD. ("Unitree Robotics")
+# Copyright (c) 2026, unitree-go2-rl contributors.
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# This file is a modified version of code from unitree_mujoco
+# (https://github.com/unitreerobotics/unitree_mujoco, BSD 3-Clause License):
+#   simulate_python/unitree_mujoco.py
+# Changes by unitree-go2-rl contributors (2026):
+#   - scene of an evaluation scenario, control connection (reset / hold / release), ground truth and contact forces
+#   - physics loop on a fixed schedule; optional viewer
 """MuJoCo simulator for the scenario evaluation (driven by ros2_ws/src/go2_eval).
 
 It is the simulator of unitree_mujoco.py (same robot model, same time step SIMULATE_DT, same DDS bridge

@@ -1,3 +1,5 @@
+# Copyright (c) 2026, unitree-go2-rl contributors.
+# SPDX-License-Identifier: BSD-3-Clause
 """MuJoCo scenes of the evaluation scenarios of unitree_rl_lab (eval_scenarios.py).
 
 The terrains are exported from IsaacLab by unitree_rl_lab/scripts/rsl_rl/export_mujoco_scenarios.py
